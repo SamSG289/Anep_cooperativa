@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Panel de Administración · Cooperativa Ancep</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">
+tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","error":"#ba1a1a","tertiary-fixed-dim":"#cac6be","surface-dim":"#dbdad6","primary":"#570013","outline-variant":"#e0bfbf","background":"#fbf9f5","surface-variant":"#e4e2de","inverse-primary":"#ffb3b5","on-tertiary-container":"#aaa79f","error-container":"#ffdad6","surface-container-lowest":"#ffffff","secondary-fixed-dim":"#b6d088","on-background":"#1b1c1a","inverse-on-surface":"#f2f0ed","inverse-surface":"#30312e","surface-tint":"#af2b3e","surface-container":"#efeeea","on-secondary-fixed-variant":"#394d14","on-surface-variant":"#584141","tertiary-fixed":"#e6e2d9","outline":"#8c7071","primary-fixed":"#ffdada","on-tertiary":"#ffffff","on-tertiary-fixed-variant":"#484740","on-tertiary-fixed":"#1c1c16","on-secondary":"#ffffff","secondary":"#50652a","secondary-fixed":"#d2eca2","on-error":"#ffffff","primary-fixed-dim":"#ffb3b5","surface-container-highest":"#e4e2de","surface-container-low":"#f5f3ef","tertiary-container":"#3e3d37","on-primary-fixed-variant":"#8e0f28","surface-bright":"#fbf9f5","primary-container":"#800020","on-secondary-container":"#546a2e","surface-container-high":"#eae8e4","on-primary":"#ffffff","surface":"#fbf9f5","on-primary-fixed":"#40000b","on-surface":"#1b1c1a","tertiary":"#282722","secondary-container":"#cfe99f","on-primary-container":"#ff828a"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"base-unit":"8px","margin-desktop":"64px","margin-mobile":"20px","gutter":"24px","container-max-width":"1280px"},"fontFamily":{"headline-lg-mobile":["Libre Caslon Text"],"body-lg":["Work Sans"],"headline-xl":["Libre Caslon Text"],"body-md":["Work Sans"],"headline-lg":["Libre Caslon Text"],"label-sm":["Work Sans"]},"fontSize":{"headline-lg-mobile":["28px",{"lineHeight":"36px","fontWeight":"600"}],"body-lg":["18px",{"lineHeight":"28px","fontWeight":"400"}],"headline-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-md":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","fontWeight":"600"}],"label-sm":["12px",{"lineHeight":"16px","letterSpacing":"0.05em","fontWeight":"600"}]}}}};
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet">
+<script src="js/data.js"></script>
+<script>
+  if (sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) !== '1') {
+    window.location.replace('index.html');
+  }
+</script>
+</head>
+<body class="bg-background font-body-md text-on-surface">
+
+<aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col py-8 shadow-sm">
+  <div class="px-8 mb-12 flex flex-col gap-2">
+    <span class="text-primary font-headline-lg text-headline-lg">Admin</span>
+    <span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-widest">Cooperativa Ancep</span>
+  </div>
+  <nav class="flex-1 px-4 space-y-2">
+    <a id="nav-dashboard" data-view="dashboard" href="#" class="flex items-center px-6 py-4 transition-all rounded-xl">
+      <span class="material-symbols-outlined mr-4">dashboard</span>Panel General
+    </a>
+    <a id="nav-inventario" data-view="inventario" href="#" class="flex items-center px-6 py-4 transition-all rounded-xl">
+      <span class="material-symbols-outlined mr-4">inventory_2</span>Inventario
+    </a>
+  </nav>
+  <div class="px-6 mt-auto">
+    <a id="logout-link" href="index.html" class="flex items-center px-6 py-4 text-on-surface-variant hover:text-primary transition-colors border-t border-outline-variant">
+      <span class="material-symbols-outlined mr-4">logout</span>Volver al Sitio
+    </a>
+  </div>
+</aside>
+
+<div class="pl-72">
+  <header class="fixed top-0 left-72 right-0 h-20 bg-surface/80 backdrop-blur-xl z-40 flex items-center justify-end px-margin-desktop gap-6">
+    <span id="header-title" class="font-headline-lg-mobile font-headline-lg-mobile text-on-surface-variant">Panel General</span>
+  </header>
+
+  <main class="relative pt-20 w-full min-h-screen p-8">
+    <div class="flex flex-col w-full max-w-container-max-width mx-auto">
+
+      <!-- Dashboard view -->
+      <section id="view-dashboard">
+        <div class="mb-12">
+          <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Panel General</h1>
+          <p class="font-body-lg text-body-lg text-on-surface-variant">Resumen del catálogo de la cooperativa.</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-gutter mb-8">
+          <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] p-8 flex flex-col gap-2">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Total de Productos</span>
+            <span id="stat-total" class="font-headline-xl text-headline-xl text-primary">0</span>
+          </div>
+          <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] p-8 flex flex-col gap-2">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Disponibles</span>
+            <span id="stat-available" class="font-headline-xl text-headline-xl text-secondary">0</span>
+          </div>
+          <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] p-8 flex flex-col gap-2">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sin Stock</span>
+            <span id="stat-out" class="font-headline-xl text-headline-xl text-error">0</span>
+          </div>
+        </div>
+        <button data-goto-inventario class="bg-primary text-on-primary font-label-sm text-label-sm px-6 py-4 rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md flex items-center gap-2 w-fit">
+          <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+          VER INVENTARIO
+        </button>
+      </section>
+
+      <!-- Inventory view -->
+      <section id="view-inventario" class="hidden">
+        <div class="flex justify-between items-end mb-12">
+          <div>
+            <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Gestión de Productos</h1>
+            <p class="font-body-lg text-body-lg text-on-surface-variant">Administra el catálogo de mermeladas y conservas artesanales.</p>
+          </div>
+          <button id="add-product-btn" class="bg-primary text-on-primary font-label-sm text-label-sm px-6 py-4 rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md flex items-center gap-2 group">
+            <span class="material-symbols-outlined text-[20px] transition-transform group-hover:rotate-90">add</span>
+            AGREGAR PRODUCTO
+          </button>
+        </div>
+        <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-surface-container-low border-b border-surface-variant">
+                  <th class="p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest w-24">Imagen</th>
+                  <th class="p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Producto</th>
+                  <th class="p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest hidden md:table-cell">Descripción</th>
+                  <th class="p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Precio</th>
+                  <th class="p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-center">Stock</th>
+                  <th class="p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="product-table-body" class="font-body-md text-body-md text-on-surface"></tbody>
+            </table>
+          </div>
+          <div class="bg-surface-container-low p-4 flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm border-t border-surface-variant">
+            <span id="pagination-label"></span>
+            <div class="flex gap-2">
+              <button id="page-prev" class="p-2 hover:bg-surface-variant rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+              <button id="page-next" class="p-2 hover:bg-surface-variant rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Product modal -->
+    <div class="fixed inset-0 z-[100] hidden" id="product-modal">
+      <div class="drawer-overlay absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm" data-close-modal></div>
+      <div class="drawer-panel absolute right-0 top-0 bottom-0 w-full max-w-md bg-surface-container-lowest shadow-2xl flex flex-col">
+        <div class="p-8 border-b border-surface-variant flex justify-between items-center bg-surface-container-low">
+          <h2 id="modal-title" class="font-headline-lg text-headline-lg text-primary">Nuevo Producto</h2>
+          <button class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-variant" data-close-modal>
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <form id="product-form" class="flex-1 overflow-y-auto p-8 flex flex-col gap-8">
+          <input type="hidden" id="product-id">
+          <div id="image-drop" class="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-2xl p-8 bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer group bg-cover bg-center" style="background-image:none;">
+            <div id="image-drop-empty" class="flex flex-col items-center">
+              <div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-on-secondary-container">add_a_photo</span>
+              </div>
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-widest text-center">Subir Imagen</span>
+              <span class="font-body-md text-body-md text-on-surface-variant text-center mt-2 text-[14px]">JPG, PNG hasta 2MB</span>
+            </div>
+            <input id="image-input" type="file" accept="image/*" class="hidden">
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Nombre del Producto</label>
+            <input id="product-name" required class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Ej. Mermelada de Naranja" type="text">
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Descripción</label>
+            <textarea id="product-description" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline resize-none h-32" placeholder="Detalles de los ingredientes y preparación..."></textarea>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Precio (ARS)</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 font-body-lg text-on-surface-variant">$</span>
+              <input id="product-price" required min="0" step="1" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 pl-8 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="0.00" type="number">
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+            <div class="flex flex-col">
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Disponibilidad</span>
+              <span class="font-body-md text-body-md text-on-surface">Producto en stock</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="product-stock" checked class="sr-only peer" type="checkbox">
+              <div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+            </label>
+          </div>
+        </form>
+        <div class="p-8 border-t border-surface-variant bg-surface-container-lowest flex gap-4">
+          <button type="button" data-close-modal class="flex-1 py-4 border-2 border-outline text-on-surface font-label-sm text-label-sm rounded-[16px] hover:bg-surface-container transition-colors">
+            CANCELAR
+          </button>
+          <button id="save-product-btn" type="submit" form="product-form" class="flex-1 py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md">
+            GUARDAR
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/admin.js"></script>
+</body>
+</html>

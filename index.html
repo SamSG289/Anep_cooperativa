@@ -91,9 +91,9 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
     <p class="text-body-md text-on-surface-variant">Ingresá la contraseña para acceder al panel de control.</p>
     <form id="password-form" class="flex flex-col gap-4">
       <div class="relative">
-        <input id="password-input" type="password" autocomplete="off" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 pr-14 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Contraseña">
-        <button type="button" id="toggle-password-visibility" aria-label="Mostrar contraseña" class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-variant">
-          <span id="toggle-password-icon" class="material-symbols-outlined">visibility</span>
+        <input id="password-input" type="text" autocomplete="off" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 pr-24 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Contraseña">
+        <button type="button" id="toggle-password-visibility" class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm uppercase tracking-widest text-primary hover:text-secondary transition-colors px-2 py-1">
+          Ocultar
         </button>
       </div>
       <button type="submit" class="w-full py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md">

@@ -11,7 +11,6 @@
   const passwordForm = document.getElementById('password-form');
   const passwordInput = document.getElementById('password-input');
   const togglePasswordBtn = document.getElementById('toggle-password-visibility');
-  const togglePasswordIcon = document.getElementById('toggle-password-icon');
 
   // Fill in your cooperative's WhatsApp number (country code + number, no
   // spaces or symbols, e.g. "59899123456") to send orders straight there.
@@ -240,7 +239,7 @@
     requestAnimationFrame(() => passwordModal.classList.add('modal-open'));
     passwordInput.value = '';
     passwordInput.type = 'text';
-    togglePasswordIcon.textContent = 'visibility';
+    togglePasswordBtn.textContent = 'Ocultar';
     passwordInput.focus();
   }
   function closePasswordModal() {
@@ -258,7 +257,7 @@
   togglePasswordBtn.addEventListener('click', () => {
     const showing = passwordInput.type === 'text';
     passwordInput.type = showing ? 'password' : 'text';
-    togglePasswordIcon.textContent = showing ? 'visibility_off' : 'visibility';
+    togglePasswordBtn.textContent = showing ? 'Mostrar' : 'Ocultar';
     passwordInput.focus();
   });
 

@@ -28,6 +28,11 @@
   const addProductBtn = document.getElementById('add-product-btn');
   const logoutLink = document.getElementById('logout-link');
 
+  const sidebar = document.getElementById('admin-sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebarOpenBtn = document.getElementById('sidebar-open');
+  const sidebarCloseBtn = document.getElementById('sidebar-close');
+
   function toast(message) {
     const container = document.getElementById('toast-container');
     const el = document.createElement('div');
@@ -40,6 +45,19 @@
       setTimeout(() => el.remove(), 300);
     }, 2200);
   }
+
+  // ---- Mobile sidebar ----
+  function openSidebar() {
+    sidebar.classList.add('sidebar-open');
+    sidebarOverlay.classList.add('sidebar-open');
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('sidebar-open');
+    sidebarOverlay.classList.remove('sidebar-open');
+  }
+  sidebarOpenBtn.addEventListener('click', openSidebar);
+  sidebarCloseBtn.addEventListener('click', closeSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
 
   // ---- View switching ----
   function showView(view) {
@@ -55,6 +73,7 @@
     navInventario.classList.toggle('shadow-sm', !isDashboard);
     navInventario.classList.toggle('text-on-surface-variant', isDashboard);
     headerTitle.textContent = isDashboard ? 'Panel General' : 'Inventario';
+    closeSidebar();
     if (!isDashboard) renderTable();
     else renderDashboard();
   }
@@ -96,19 +115,19 @@
   function renderRow(product) {
     return `
     <tr class="border-b border-surface-variant hover:bg-surface-bright transition-colors group ${product.stock ? '' : 'bg-error-container/10'}">
-      <td class="p-6">
+      <td class="p-3 sm:p-6">
         <img class="w-12 h-12 rounded-lg object-cover shadow-sm ${product.stock ? '' : 'opacity-50 grayscale-[50%]'}" src="${escapeHtml(product.image)}">
       </td>
-      <td class="p-6 font-headline-lg-mobile text-headline-lg-mobile ${product.stock ? 'text-primary' : 'text-on-surface-variant'}">${escapeHtml(product.name)}</td>
-      <td class="p-6 text-on-surface-variant hidden md:table-cell truncate max-w-[200px]">${escapeHtml(product.description)}</td>
-      <td class="p-6 ${product.stock ? '' : 'text-on-surface-variant'}">${formatPrice(product.price)}</td>
-      <td class="p-6 text-center">
+      <td class="p-3 sm:p-6 font-headline-lg-mobile text-headline-lg-mobile ${product.stock ? 'text-primary' : 'text-on-surface-variant'}">${escapeHtml(product.name)}</td>
+      <td class="p-3 sm:p-6 text-on-surface-variant hidden md:table-cell truncate max-w-[200px]">${escapeHtml(product.description)}</td>
+      <td class="p-3 sm:p-6 whitespace-nowrap ${product.stock ? '' : 'text-on-surface-variant'}">${formatPrice(product.price)}</td>
+      <td class="p-3 sm:p-6 text-center">
         <label class="relative inline-flex items-center cursor-pointer">
           <input data-toggle-stock="${product.id}" class="sr-only peer" type="checkbox" ${product.stock ? 'checked' : ''}>
           <div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
         </label>
       </td>
-      <td class="p-6 text-right">
+      <td class="p-3 sm:p-6 text-right whitespace-nowrap">
         <button data-edit="${product.id}" class="text-on-surface-variant hover:text-primary transition-colors p-2" title="Editar">
           <span class="material-symbols-outlined">edit</span>
         </button>

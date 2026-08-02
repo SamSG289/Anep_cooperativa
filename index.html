@@ -80,7 +80,7 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
 
 <!-- Hidden admin unlock: password modal (appears after 15 clicks on the logo) -->
 <div id="password-modal" class="fixed inset-0 z-[110] hidden items-center justify-center px-4">
-  <div class="drawer-overlay absolute inset-0 bg-inverse-surface/50 backdrop-blur-sm" data-close-password></div>
+  <div class="drawer-overlay absolute inset-0 bg-inverse-surface/50 backdrop-blur-sm"></div>
   <div class="modal-scale relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-sm p-8 flex flex-col gap-6">
     <div class="flex justify-between items-center">
       <h2 class="font-headline-lg text-headline-lg text-primary">Acceso al Panel</h2>
@@ -90,7 +90,12 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
     </div>
     <p class="text-body-md text-on-surface-variant">Ingresá la contraseña para acceder al panel de control.</p>
     <form id="password-form" class="flex flex-col gap-4">
-      <input id="password-input" type="password" autocomplete="off" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Contraseña">
+      <div class="relative">
+        <input id="password-input" type="password" autocomplete="off" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 pr-14 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Contraseña">
+        <button type="button" id="toggle-password-visibility" aria-label="Mostrar contraseña" class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-variant">
+          <span id="toggle-password-icon" class="material-symbols-outlined">visibility</span>
+        </button>
+      </div>
       <button type="submit" class="w-full py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md">
         INGRESAR
       </button>

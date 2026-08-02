@@ -10,6 +10,8 @@
   const passwordModal = document.getElementById('password-modal');
   const passwordForm = document.getElementById('password-form');
   const passwordInput = document.getElementById('password-input');
+  const togglePasswordBtn = document.getElementById('toggle-password-visibility');
+  const togglePasswordIcon = document.getElementById('toggle-password-icon');
 
   // Fill in your cooperative's WhatsApp number (country code + number, no
   // spaces or symbols, e.g. "59899123456") to send orders straight there.
@@ -237,6 +239,8 @@
     passwordModal.classList.add('flex');
     requestAnimationFrame(() => passwordModal.classList.add('modal-open'));
     passwordInput.value = '';
+    passwordInput.type = 'text';
+    togglePasswordIcon.textContent = 'visibility';
     passwordInput.focus();
   }
   function closePasswordModal() {
@@ -246,7 +250,17 @@
       passwordModal.classList.remove('flex');
     }, 200);
   }
+  // Only the X button closes this modal — clicking outside it does nothing,
+  // so it can't be dismissed by accident and always requires 15 fresh clicks
+  // on the logo to reopen.
   passwordModal.querySelectorAll('[data-close-password]').forEach((el) => el.addEventListener('click', closePasswordModal));
+
+  togglePasswordBtn.addEventListener('click', () => {
+    const showing = passwordInput.type === 'text';
+    passwordInput.type = showing ? 'password' : 'text';
+    togglePasswordIcon.textContent = showing ? 'visibility_off' : 'visibility';
+    passwordInput.focus();
+  });
 
   passwordForm.addEventListener('submit', (e) => {
     e.preventDefault();

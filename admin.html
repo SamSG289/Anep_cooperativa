@@ -4,14 +4,42 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Panel de Administración · Cooperativa Ancep</title>
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=3">
+<style>
+  /* Inlined (not in css/styles.css) so it can never go out of sync with
+     this page's markup if a browser caches the stylesheet separately. */
+  #admin-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease-in-out;
+  }
+  #admin-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  #sidebar-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease-in-out;
+  }
+  #sidebar-overlay.sidebar-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  @media (min-width: 768px) {
+    #admin-sidebar {
+      transform: translateX(0) !important;
+    }
+    #sidebar-overlay {
+      display: none;
+    }
+  }
+</style>
 <script src="https://cdn.tailwindcss.com"></script>
 <script id="tailwind-config">
 tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","error":"#ba1a1a","tertiary-fixed-dim":"#cac6be","surface-dim":"#dbdad6","primary":"#570013","outline-variant":"#e0bfbf","background":"#fbf9f5","surface-variant":"#e4e2de","inverse-primary":"#ffb3b5","on-tertiary-container":"#aaa79f","error-container":"#ffdad6","surface-container-lowest":"#ffffff","secondary-fixed-dim":"#b6d088","on-background":"#1b1c1a","inverse-on-surface":"#f2f0ed","inverse-surface":"#30312e","surface-tint":"#af2b3e","surface-container":"#efeeea","on-secondary-fixed-variant":"#394d14","on-surface-variant":"#584141","tertiary-fixed":"#e6e2d9","outline":"#8c7071","primary-fixed":"#ffdada","on-tertiary":"#ffffff","on-tertiary-fixed-variant":"#484740","on-tertiary-fixed":"#1c1c16","on-secondary":"#ffffff","secondary":"#50652a","secondary-fixed":"#d2eca2","on-error":"#ffffff","primary-fixed-dim":"#ffb3b5","surface-container-highest":"#e4e2de","surface-container-low":"#f5f3ef","tertiary-container":"#3e3d37","on-primary-fixed-variant":"#8e0f28","surface-bright":"#fbf9f5","primary-container":"#800020","on-secondary-container":"#546a2e","surface-container-high":"#eae8e4","on-primary":"#ffffff","surface":"#fbf9f5","on-primary-fixed":"#40000b","on-surface":"#1b1c1a","tertiary":"#282722","secondary-container":"#cfe99f","on-primary-container":"#ff828a"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"base-unit":"8px","margin-desktop":"64px","margin-mobile":"20px","gutter":"24px","container-max-width":"1280px"},"fontFamily":{"headline-lg-mobile":["Libre Caslon Text"],"body-lg":["Work Sans"],"headline-xl":["Libre Caslon Text"],"body-md":["Work Sans"],"headline-lg":["Libre Caslon Text"],"label-sm":["Work Sans"]},"fontSize":{"headline-lg-mobile":["28px",{"lineHeight":"36px","fontWeight":"600"}],"body-lg":["18px",{"lineHeight":"28px","fontWeight":"400"}],"headline-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-md":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","fontWeight":"600"}],"label-sm":["12px",{"lineHeight":"16px","letterSpacing":"0.05em","fontWeight":"600"}]}}}};
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet">
-<script src="js/data.js"></script>
+<script src="js/data.js?v=3"></script>
 <script>
   if (sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) !== '1') {
     window.location.replace('index.html');
@@ -187,6 +215,6 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
 
 <div id="toast-container"></div>
 
-<script src="js/admin.js"></script>
+<script src="js/admin.js?v=3"></script>
 </body>
 </html>

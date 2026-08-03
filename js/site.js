@@ -12,6 +12,8 @@
   const passwordInput = document.getElementById('password-input');
   const togglePasswordBtn = document.getElementById('toggle-password-visibility');
 
+  let currentProducts = [];
+
   // Fill in your cooperative's WhatsApp number (country code + number, no
   // spaces or symbols, e.g. "59899123456") to send orders straight there.
   // Leave empty to just show a confirmation message instead.
@@ -32,8 +34,7 @@
 
   // ---- Catalog ----
   function renderProducts() {
-    const products = getProducts();
-    grid.innerHTML = products.map(renderCard).join('');
+    grid.innerHTML = currentProducts.map(renderCard).join('');
   }
 
   function renderCard(product) {
@@ -87,7 +88,7 @@
     else cart.push({ id: productId, qty: 1 });
     saveCart(cart);
     renderCartBadge();
-    const product = getProducts().find((p) => p.id === productId);
+    const product = currentProducts.find((p) => p.id === productId);
     toast(`${product ? product.name : 'Producto'} agregado al carrito`);
   }
 
@@ -119,7 +120,7 @@
 
   function renderCart() {
     const cart = getCart();
-    const products = getProducts();
+    const products = currentProducts;
     renderCartBadge();
 
     if (cart.length === 0) {
@@ -188,7 +189,7 @@
       toast('Tu carrito está vacío');
       return;
     }
-    const products = getProducts();
+    const products = currentProducts;
     const lines = cart.map((item) => {
       const product = products.find((p) => p.id === item.id);
       return product ? `- ${product.name} x${item.qty} (${formatPrice(product.price * item.qty)})` : '';
@@ -277,6 +278,11 @@
   });
 
   // ---- Init ----
-  renderProducts();
   renderCartBadge();
+  seedProductsIfEmpty();
+  subscribeToProducts((products) => {
+    currentProducts = products;
+    renderProducts();
+    if (!cartDrawer.classList.contains('hidden')) renderCart();
+  });
 })();

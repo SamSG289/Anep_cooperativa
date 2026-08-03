@@ -1,15 +1,28 @@
-// Shared "database" for the cooperative site, backed by localStorage.
-// Both index.html (catalog) and admin.html (control panel) read/write here,
-// so changes made in the panel show up immediately in the client menu.
+// Shared "database" for the cooperative site.
+// Products live in Firebase Realtime Database, so a change made in the
+// admin panel (on any device) pushes live to every open index.html/admin.html
+// tab. The cart stays in localStorage since it's specific to each visitor.
 
 const STORAGE_KEYS = {
-  PRODUCTS: 'anep_products',
   CART: 'anep_cart',
   ADMIN_AUTH: 'anep_admin_auth',
 };
 
 const ADMIN_PASSWORD = 'C0op3r4tiv4An3p';
 const LOGO_CLICKS_TO_UNLOCK = 15;
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyADcmtv6mWS9864OKFOEv0SesS-Rkmm8jA',
+  authDomain: 'ancep-cooperativa.firebaseapp.com',
+  databaseURL: 'https://ancep-cooperativa-default-rtdb.firebaseio.com',
+  projectId: 'ancep-cooperativa',
+  storageBucket: 'ancep-cooperativa.firebasestorage.app',
+  messagingSenderId: '723684943892',
+  appId: '1:723684943892:web:5fbbb1f08eb9faf149df01',
+};
+
+firebase.initializeApp(firebaseConfig);
+const productsRef = firebase.database().ref('products');
 
 const DEFAULT_PRODUCTS = [
   {
@@ -62,26 +75,46 @@ const DEFAULT_PRODUCTS = [
   },
 ];
 
-function getProducts() {
-  const raw = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-  if (!raw) {
-    saveProducts(DEFAULT_PRODUCTS);
-    return DEFAULT_PRODUCTS.slice();
-  }
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : DEFAULT_PRODUCTS.slice();
-  } catch {
-    return DEFAULT_PRODUCTS.slice();
-  }
+// Populates the database with the starter catalog the very first time it's
+// ever empty (e.g. brand new Firebase project). Safe to call on every page
+// load — it's a no-op once there's real data.
+function seedProductsIfEmpty() {
+  productsRef.once('value').then((snapshot) => {
+    if (snapshot.exists()) return;
+    const seed = {};
+    DEFAULT_PRODUCTS.forEach((p) => {
+      seed[p.id] = { name: p.name, description: p.description, price: p.price, image: p.image, stock: p.stock };
+    });
+    productsRef.set(seed);
+  });
 }
 
-function saveProducts(products) {
-  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+// Calls callback(productsArray) once immediately and again every time the
+// data changes on the server — from this tab or from anyone else's.
+function subscribeToProducts(callback) {
+  productsRef.on('value', (snapshot) => {
+    const val = snapshot.val();
+    const products = val
+      ? Object.keys(val).map((key) => ({ id: Number(key), ...val[key] })).sort((a, b) => a.id - b.id)
+      : [];
+    callback(products);
+  });
 }
 
-function nextProductId(products) {
-  return products.reduce((max, p) => Math.max(max, p.id), 0) + 1;
+function addProduct(product) {
+  return productsRef.once('value').then((snapshot) => {
+    const val = snapshot.val() || {};
+    const nextId = Object.keys(val).reduce((max, key) => Math.max(max, Number(key)), 0) + 1;
+    return productsRef.child(String(nextId)).set(product);
+  });
+}
+
+function updateProduct(id, changes) {
+  return productsRef.child(String(id)).update(changes);
+}
+
+function deleteProduct(id) {
+  return productsRef.child(String(id)).remove();
 }
 
 function getCart() {

@@ -33,6 +33,8 @@
   const sidebarOpenBtn = document.getElementById('sidebar-open');
   const sidebarCloseBtn = document.getElementById('sidebar-close');
 
+  let currentProducts = [];
+
   function toast(message) {
     const container = document.getElementById('toast-container');
     const el = document.createElement('div');
@@ -88,7 +90,7 @@
 
   // ---- Dashboard ----
   function renderDashboard() {
-    const products = getProducts();
+    const products = currentProducts;
     document.getElementById('stat-total').textContent = products.length;
     document.getElementById('stat-available').textContent = products.filter((p) => p.stock).length;
     document.getElementById('stat-out').textContent = products.filter((p) => !p.stock).length;
@@ -96,7 +98,7 @@
 
   // ---- Table / Inventory ----
   function renderTable() {
-    const products = getProducts();
+    const products = currentProducts;
     const totalPages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
     currentPage = Math.min(currentPage, totalPages);
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -142,32 +144,26 @@
     const editBtn = e.target.closest('[data-edit]');
     const deleteBtn = e.target.closest('[data-delete]');
     if (editBtn) openModal(Number(editBtn.dataset.edit));
-    if (deleteBtn) deleteProduct(Number(deleteBtn.dataset.delete));
+    if (deleteBtn) confirmAndDeleteProduct(Number(deleteBtn.dataset.delete));
   });
 
   tableBody.addEventListener('change', (e) => {
     const toggle = e.target.closest('[data-toggle-stock]');
     if (!toggle) return;
-    const products = getProducts();
-    const product = products.find((p) => p.id === Number(toggle.dataset.toggleStock));
+    const product = currentProducts.find((p) => p.id === Number(toggle.dataset.toggleStock));
     if (!product) return;
-    product.stock = toggle.checked;
-    saveProducts(products);
-    renderTable();
-    toast(`${product.name}: ${product.stock ? 'marcado como disponible' : 'marcado sin stock'}`);
+    updateProduct(product.id, { stock: toggle.checked });
+    toast(`${product.name}: ${toggle.checked ? 'marcado como disponible' : 'marcado sin stock'}`);
   });
 
   pagePrev.addEventListener('click', () => { currentPage -= 1; renderTable(); });
   pageNext.addEventListener('click', () => { currentPage += 1; renderTable(); });
 
-  function deleteProduct(id) {
-    const products = getProducts();
-    const product = products.find((p) => p.id === id);
+  function confirmAndDeleteProduct(id) {
+    const product = currentProducts.find((p) => p.id === id);
     if (!product) return;
     if (!confirm(`¿Eliminar "${product.name}" del catálogo?`)) return;
-    saveProducts(products.filter((p) => p.id !== id));
-    renderTable();
-    renderDashboard();
+    deleteProduct(id);
     toast('Producto eliminado');
   }
 
@@ -180,7 +176,7 @@
     productStockInput.checked = true;
 
     if (editId) {
-      const product = getProducts().find((p) => p.id === editId);
+      const product = currentProducts.find((p) => p.id === editId);
       if (!product) return;
       modalTitle.textContent = 'Editar Producto';
       productIdInput.value = product.id;
@@ -223,6 +219,8 @@
 
   const FALLBACK_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD5967Jh0NNog9TpcAQyt6mI1gmRqwWs7J5hn4A-DZg9mfLt1-1nxxh0MSvFzmXsrXaLXjXpdQJgdDu41m62gFmKz4KR7bfAB2R9rRB4sxP9pufqamVn9iDk388AxS3ectZG-Gv0uoC9GCRwrtINDbR9_h8U_5_7uTfwUsGI5TJC19aeNOHkRvNH8CTw_4e8fEf7qFMgAyiUdCCio_z4hbTFOZtFJRXBcs83TNffOF9-sofHmPaxlLqRLzTGM8iYJDODsY';
 
+  const saveProductBtn = document.getElementById('save-product-btn');
+
   productForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = productNameInput.value.trim();
@@ -232,36 +230,48 @@
       return;
     }
 
-    const products = getProducts();
     const editId = productIdInput.value ? Number(productIdInput.value) : null;
+    const payload = {
+      name,
+      description: productDescriptionInput.value.trim(),
+      price,
+      stock: productStockInput.checked,
+    };
+    if (pendingImage) payload.image = pendingImage;
+    else if (!editId) payload.image = FALLBACK_IMAGE;
 
-    if (editId) {
-      const product = products.find((p) => p.id === editId);
-      if (product) {
-        product.name = name;
-        product.description = productDescriptionInput.value.trim();
-        product.price = price;
-        product.stock = productStockInput.checked;
-        product.image = pendingImage || product.image;
-      }
-    } else {
-      products.push({
-        id: nextProductId(products),
-        name,
-        description: productDescriptionInput.value.trim(),
-        price,
-        image: pendingImage || FALLBACK_IMAGE,
-        stock: productStockInput.checked,
+    saveProductBtn.disabled = true;
+    saveProductBtn.textContent = 'GUARDANDO...';
+
+    const request = editId ? updateProduct(editId, payload) : addProduct(payload);
+    request
+      .then(() => {
+        closeModal();
+        toast(editId ? 'Producto actualizado' : 'Producto agregado');
+      })
+      .catch(() => {
+        toast('No se pudo guardar. Revisá tu conexión e intentá de nuevo.');
+      })
+      .finally(() => {
+        saveProductBtn.disabled = false;
+        saveProductBtn.textContent = 'GUARDAR';
       });
-    }
-
-    saveProducts(products);
-    closeModal();
-    renderTable();
-    renderDashboard();
-    toast(editId ? 'Producto actualizado' : 'Producto agregado');
   });
 
   // ---- Init ----
-  showView('dashboard');
+  let initialized = false;
+  function renderCurrentView() {
+    if (viewInventario.classList.contains('hidden')) renderDashboard();
+    else renderTable();
+  }
+  subscribeToProducts((products) => {
+    currentProducts = products;
+    if (!initialized) {
+      initialized = true;
+      showView('dashboard');
+    } else {
+      renderCurrentView();
+    }
+  });
+  seedProductsIfEmpty();
 })();

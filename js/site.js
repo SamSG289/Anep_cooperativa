@@ -35,6 +35,18 @@
   // ---- Catalog ----
   function renderProducts() {
     grid.innerHTML = currentProducts.map(renderCard).join('');
+    revealTruncatedDescriptions();
+  }
+
+  // Shows the "Ver más" toggle only for descriptions that actually get cut
+  // off by the 2-line clamp, so short ones don't get a pointless link.
+  function revealTruncatedDescriptions() {
+    grid.querySelectorAll('[data-desc]').forEach((el) => {
+      if (el.scrollHeight > el.clientHeight + 1) {
+        const toggle = grid.querySelector(`[data-toggle-desc="${el.dataset.desc}"]`);
+        if (toggle) toggle.classList.remove('hidden');
+      }
+    });
   }
 
   function renderCard(product) {
@@ -65,7 +77,10 @@
       </div>
       <div class="p-6 flex flex-col flex-grow">
         <h2 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface mb-2 ${available ? '' : 'opacity-60'}">${escapeHtml(product.name)}</h2>
-        <p class="text-body-md font-body-md text-on-surface-variant mb-6 line-clamp-2 ${available ? '' : 'opacity-60'}">${escapeHtml(product.description)}</p>
+        <div class="mb-6">
+          <p data-desc="${product.id}" class="text-body-md font-body-md text-on-surface-variant line-clamp-2 ${available ? '' : 'opacity-60'}">${escapeHtml(product.description)}</p>
+          <button type="button" data-toggle-desc="${product.id}" class="hidden text-secondary text-sm font-semibold hover:underline mt-1">Ver más</button>
+        </div>
         <div class="mt-auto flex items-center justify-between">
           <span class="text-headline-lg-mobile font-headline-lg-mobile text-primary">${formatPrice(product.price)}</span>
           ${button}
@@ -75,9 +90,15 @@
   }
 
   grid.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-add-to-cart]');
-    if (!btn) return;
-    addToCart(Number(btn.dataset.addToCart));
+    const addBtn = e.target.closest('[data-add-to-cart]');
+    if (addBtn) addToCart(Number(addBtn.dataset.addToCart));
+
+    const descToggle = e.target.closest('[data-toggle-desc]');
+    if (descToggle) {
+      const desc = grid.querySelector(`[data-desc="${descToggle.dataset.toggleDesc}"]`);
+      const expanded = desc.classList.toggle('line-clamp-2') === false;
+      descToggle.textContent = expanded ? 'Ver menos' : 'Ver más';
+    }
   });
 
   // ---- Cart ----

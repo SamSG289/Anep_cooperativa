@@ -299,6 +299,12 @@
   });
 
   // ---- Init ----
+  // Re-check truncation once the web fonts finish loading: text wraps
+  // differently with the fallback font than with the final one, so a
+  // description measured too early could wrongly get skipped.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(revealTruncatedDescriptions);
+  }
   renderCartBadge();
   seedProductsIfEmpty();
   subscribeToProducts((products) => {

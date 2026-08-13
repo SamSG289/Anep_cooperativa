@@ -35,7 +35,11 @@
   // ---- Catalog ----
   function renderProducts() {
     grid.innerHTML = currentProducts.map(renderCard).join('');
-    revealTruncatedDescriptions();
+    // Tailwind's CDN build generates the CSS for these classes
+    // asynchronously (it watches the page and injects styles as they show
+    // up), so the 2-line clamp isn't actually active yet on this same tick.
+    // Wait a couple of frames for it to catch up before measuring.
+    requestAnimationFrame(() => requestAnimationFrame(revealTruncatedDescriptions));
   }
 
   // Shows the "Ver más" toggle only for descriptions that actually get cut

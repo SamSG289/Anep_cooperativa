@@ -1,5 +1,6 @@
 (function () {
   const grid = document.getElementById('product-grid');
+  const categoryFiltersEl = document.getElementById('category-filters');
   const cartBtn = document.getElementById('cart-btn');
   const cartCount = document.getElementById('cart-count');
   const cartDrawer = document.getElementById('cart-drawer');
@@ -12,11 +13,31 @@
   const passwordInput = document.getElementById('password-input');
   const togglePasswordBtn = document.getElementById('toggle-password-visibility');
 
+  const accountBtn = document.getElementById('account-btn');
+  const accountModal = document.getElementById('account-modal');
+  const accountModalTitle = document.getElementById('account-modal-title');
+  const accountForm = document.getElementById('account-form');
+  const accountNameInput = document.getElementById('account-name');
+  const accountEmailInput = document.getElementById('account-email');
+  const accountPasswordInput = document.getElementById('account-password');
+  const accountSubmitBtn = document.getElementById('account-submit-btn');
+  const accountToggleModeBtn = document.getElementById('account-toggle-mode');
+  const accountTogglePrompt = document.getElementById('account-toggle-prompt');
+  const accountDrawer = document.getElementById('account-drawer');
+  const accountDrawerEmail = document.getElementById('account-drawer-email');
+  const myOrdersList = document.getElementById('my-orders-list');
+  const logoutBtn = document.getElementById('logout-btn');
+
   let currentProducts = [];
+  let currentOrders = [];
+  let currentUser = null;
+  let activeCategory = 'Todos';
+  let accountMode = 'login'; // 'login' | 'register'
+  let pendingCheckout = false;
 
   // Fill in your cooperative's WhatsApp number (country code + number, no
-  // spaces or symbols, e.g. "59899123456") to send orders straight there.
-  // Leave empty to just show a confirmation message instead.
+  // spaces or symbols, e.g. "59899123456") to also get an instant WhatsApp
+  // notification whenever a real order comes in. Leave empty to skip that.
   const WHATSAPP_NUMBER = '';
 
   function toast(message) {
@@ -32,9 +53,32 @@
     }, 2200);
   }
 
+  // ---- Category filters ----
+  function renderCategoryFilters() {
+    const categories = Array.from(new Set(currentProducts.map((p) => p.category).filter(Boolean)));
+    if (categories.length <= 1) {
+      categoryFiltersEl.innerHTML = '';
+      return;
+    }
+    const all = ['Todos', ...categories];
+    categoryFiltersEl.innerHTML = all.map((cat) => `
+      <button type="button" data-category="${escapeHtml(cat)}" class="px-4 py-2 rounded-full font-label-sm text-label-sm transition-colors ${cat === activeCategory ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}">${escapeHtml(cat)}</button>
+    `).join('');
+  }
+
+  categoryFiltersEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-category]');
+    if (!btn) return;
+    activeCategory = btn.dataset.category;
+    renderCategoryFilters();
+    renderProducts();
+  });
+
   // ---- Catalog ----
   function renderProducts() {
-    grid.innerHTML = currentProducts.map(renderCard).join('');
+    renderCategoryFilters();
+    const filtered = activeCategory === 'Todos' ? currentProducts : currentProducts.filter((p) => p.category === activeCategory);
+    grid.innerHTML = filtered.map(renderCard).join('') || `<p class="col-span-full text-center text-on-surface-variant py-12">No hay productos en esta categoría todavía.</p>`;
     // Tailwind's CDN build generates the CSS for these classes
     // asynchronously (it watches the page and injects styles as they show
     // up), so the 2-line clamp isn't actually active yet on this same tick.
@@ -54,16 +98,31 @@
   }
 
   function renderCard(product) {
-    const available = !!product.stock;
+    const stockQty = product.stockQty || 0;
+    const available = stockQty > 0;
+    const lowStock = available && stockQty <= 3;
+    const images = product.images && product.images.length ? product.images : [];
+
     const badge = available
       ? `<div class="absolute top-4 left-4 z-10 bg-secondary/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-2">
            <div class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></div>
-           <span class="text-xs font-semibold text-on-primary tracking-wider uppercase">Disponible</span>
+           <span class="text-xs font-semibold text-on-primary tracking-wider uppercase">${lowStock ? `Quedan ${stockQty}` : 'Disponible'}</span>
          </div>`
       : `<div class="absolute top-4 left-4 z-10 bg-surface-variant/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-2">
            <div class="w-2 h-2 rounded-full bg-on-surface-variant"></div>
            <span class="text-xs font-semibold text-on-surface-variant tracking-wider uppercase">Sin Stock</span>
          </div>`;
+
+    const gallery = images.length > 1 ? `
+      <button type="button" aria-label="Foto anterior" data-img-prev="${product.id}" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface/80 hover:bg-surface flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+      <button type="button" aria-label="Foto siguiente" data-img-next="${product.id}" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface/80 hover:bg-surface flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+      <div class="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-10">
+        ${images.map((_, i) => `<span data-img-dot="${product.id}" data-dot-index="${i}" class="w-1.5 h-1.5 rounded-full transition-colors ${i === 0 ? 'bg-white' : 'bg-white/50'}"></span>`).join('')}
+      </div>` : '';
 
     const button = available
       ? `<button aria-label="Añadir al carrito" data-add-to-cart="${product.id}" class="bg-primary hover:bg-primary-container text-on-primary w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-sm">
@@ -77,9 +136,11 @@
     <article class="flex flex-col bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(128,0,32,0.04)] overflow-hidden hover:shadow-[0_16px_40px_rgba(128,0,32,0.08)] hover:-translate-y-1 transition-all duration-300 border border-surface-variant/50 relative group">
       ${badge}
       <div class="w-full aspect-[4/5] relative overflow-hidden bg-surface-container">
-        <img alt="${escapeHtml(product.name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out ${available ? '' : 'grayscale opacity-70'}" src="${escapeHtml(product.image)}">
+        <img data-card-image="${product.id}" data-image-index="0" data-images="${escapeAttr(JSON.stringify(images))}" alt="${escapeHtml(product.name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out ${available ? '' : 'grayscale opacity-70'}" src="${escapeHtml(images[0])}">
+        ${gallery}
       </div>
       <div class="p-6 flex flex-col flex-grow">
+        ${product.category ? `<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">${escapeHtml(product.category)}</span>` : ''}
         <h2 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface mb-2 ${available ? '' : 'opacity-60'}">${escapeHtml(product.name)}</h2>
         <div class="mb-6">
           <p data-desc="${product.id}" class="text-body-md font-body-md text-on-surface-variant line-clamp-2 ${available ? '' : 'opacity-60'}">${escapeHtml(product.description)}</p>
@@ -93,6 +154,21 @@
     </article>`;
   }
 
+  function setCardImage(productId, index) {
+    const img = grid.querySelector(`[data-card-image="${productId}"]`);
+    if (!img) return;
+    const images = JSON.parse(img.dataset.images || '[]');
+    if (!images.length) return;
+    const wrapped = ((index % images.length) + images.length) % images.length;
+    img.src = images[wrapped];
+    img.dataset.imageIndex = String(wrapped);
+    grid.querySelectorAll(`[data-img-dot="${productId}"]`).forEach((dot) => {
+      const active = Number(dot.dataset.dotIndex) === wrapped;
+      dot.classList.toggle('bg-white', active);
+      dot.classList.toggle('bg-white/50', !active);
+    });
+  }
+
   grid.addEventListener('click', (e) => {
     const addBtn = e.target.closest('[data-add-to-cart]');
     if (addBtn) addToCart(Number(addBtn.dataset.addToCart));
@@ -103,24 +179,50 @@
       const expanded = desc.classList.toggle('line-clamp-2') === false;
       descToggle.textContent = expanded ? 'Ver menos' : 'Ver más';
     }
+
+    const prevBtn = e.target.closest('[data-img-prev]');
+    const nextBtn = e.target.closest('[data-img-next]');
+    const dot = e.target.closest('[data-img-dot]');
+    if (prevBtn) {
+      const img = grid.querySelector(`[data-card-image="${prevBtn.dataset.imgPrev}"]`);
+      setCardImage(prevBtn.dataset.imgPrev, Number(img.dataset.imageIndex) - 1);
+    }
+    if (nextBtn) {
+      const img = grid.querySelector(`[data-card-image="${nextBtn.dataset.imgNext}"]`);
+      setCardImage(nextBtn.dataset.imgNext, Number(img.dataset.imageIndex) + 1);
+    }
+    if (dot) setCardImage(dot.dataset.imgDot, Number(dot.dataset.dotIndex));
   });
 
   // ---- Cart ----
   function addToCart(productId) {
+    const product = currentProducts.find((p) => p.id === productId);
+    if (!product) return;
     const cart = getCart();
     const existing = cart.find((i) => i.id === productId);
+    const currentQty = existing ? existing.qty : 0;
+    if (currentQty >= product.stockQty) {
+      toast('No hay más stock disponible');
+      return;
+    }
     if (existing) existing.qty += 1;
     else cart.push({ id: productId, qty: 1 });
     saveCart(cart);
     renderCartBadge();
-    const product = currentProducts.find((p) => p.id === productId);
-    toast(`${product ? product.name : 'Producto'} agregado al carrito`);
+    toast(`${product.name} agregado al carrito`);
   }
 
   function updateQty(productId, delta) {
     let cart = getCart();
     const item = cart.find((i) => i.id === productId);
     if (!item) return;
+    if (delta > 0) {
+      const product = currentProducts.find((p) => p.id === productId);
+      if (product && item.qty >= product.stockQty) {
+        toast('No hay más stock disponible');
+        return;
+      }
+    }
     item.qty += delta;
     if (item.qty <= 0) cart = cart.filter((i) => i.id !== productId);
     saveCart(cart);
@@ -162,7 +264,7 @@
       total += subtotal;
       return `
       <div class="flex gap-4 items-center">
-        <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" class="w-16 h-16 rounded-lg object-cover shadow-sm">
+        <img src="${escapeHtml(product.images[0])}" alt="${escapeHtml(product.name)}" class="w-16 h-16 rounded-lg object-cover shadow-sm">
         <div class="flex-1">
           <p class="font-headline-lg-mobile font-headline-lg-mobile text-on-surface text-[16px]">${escapeHtml(product.name)}</p>
           <p class="text-on-surface-variant text-sm">${formatPrice(product.price)} c/u</p>
@@ -208,32 +310,184 @@
   cartBtn.addEventListener('click', openCart);
   cartDrawer.querySelectorAll('[data-close-cart]').forEach((el) => el.addEventListener('click', closeCart));
 
+  // ---- Checkout (requires a customer account, so orders can be tracked) ----
   checkoutBtn.addEventListener('click', () => {
-    const cart = getCart();
-    if (cart.length === 0) {
+    if (getCart().length === 0) {
       toast('Tu carrito está vacío');
       return;
     }
-    const products = currentProducts;
-    const lines = cart.map((item) => {
-      const product = products.find((p) => p.id === item.id);
-      return product ? `- ${product.name} x${item.qty} (${formatPrice(product.price * item.qty)})` : '';
-    }).filter(Boolean);
-    const total = cart.reduce((sum, item) => {
-      const product = products.find((p) => p.id === item.id);
-      return sum + (product ? product.price * item.qty : 0);
-    }, 0);
-    const message = `¡Hola! Quiero hacer este pedido a la Cooperativa Escolar Escuela Funes:\n${lines.join('\n')}\nTotal: ${formatPrice(total)}`;
-
-    if (WHATSAPP_NUMBER) {
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
-    } else {
-      toast('¡Gracias por tu pedido! Nos pondremos en contacto para coordinar la entrega.');
+    if (!currentUser) {
+      pendingCheckout = true;
+      closeCart();
+      setAccountMode('login');
+      openAccountModal();
+      toast('Iniciá sesión para completar tu pedido');
+      return;
     }
-    saveCart([]);
-    renderCart();
-    closeCart();
+    completeCheckout();
   });
+
+  function completeCheckout() {
+    const cart = getCart();
+    if (cart.length === 0) return;
+    const items = cart.map((item) => {
+      const product = currentProducts.find((p) => p.id === item.id);
+      return product ? { id: product.id, name: product.name, price: product.price, qty: item.qty } : null;
+    }).filter(Boolean);
+    if (items.length === 0) return;
+    const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+    const order = {
+      userId: currentUser.uid,
+      customerName: currentUser.displayName || currentUser.email,
+      customerEmail: currentUser.email,
+      items,
+      total,
+    };
+
+    checkoutBtn.disabled = true;
+    createOrder(order)
+      .then(() => {
+        items.forEach((i) => decrementStock(i.id, i.qty));
+        saveCart([]);
+        renderCart();
+        closeCart();
+        toast('¡Pedido realizado! Podés ver el estado en "Mi Cuenta".');
+        if (WHATSAPP_NUMBER) {
+          const lines = items.map((i) => `- ${i.name} x${i.qty} (${formatPrice(i.price * i.qty)})`);
+          const message = `¡Hola! Hay un pedido nuevo del sitio:\n${lines.join('\n')}\nTotal: ${formatPrice(total)}\nCliente: ${order.customerName} (${order.customerEmail})`;
+          window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+        }
+      })
+      .catch(() => {
+        toast('No se pudo enviar el pedido. Intentá de nuevo.');
+      })
+      .finally(() => {
+        checkoutBtn.disabled = false;
+      });
+  }
+
+  // ---- Customer accounts ----
+  function openAccountModal() {
+    accountModal.classList.remove('hidden');
+    accountModal.classList.add('flex');
+    requestAnimationFrame(() => accountModal.classList.add('modal-open'));
+  }
+  function closeAccountModal() {
+    accountModal.classList.remove('modal-open');
+    setTimeout(() => {
+      accountModal.classList.add('hidden');
+      accountModal.classList.remove('flex');
+    }, 200);
+    pendingCheckout = false;
+  }
+  accountModal.querySelectorAll('[data-close-account]').forEach((el) => el.addEventListener('click', closeAccountModal));
+
+  function setAccountMode(mode) {
+    accountMode = mode;
+    const isLogin = mode === 'login';
+    accountModalTitle.textContent = isLogin ? 'Iniciar Sesión' : 'Crear Cuenta';
+    accountNameInput.classList.toggle('hidden', isLogin);
+    accountSubmitBtn.textContent = isLogin ? 'INGRESAR' : 'CREAR CUENTA';
+    accountTogglePrompt.textContent = isLogin ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?';
+    accountToggleModeBtn.textContent = isLogin ? 'Crear una' : 'Iniciar sesión';
+  }
+  accountToggleModeBtn.addEventListener('click', () => setAccountMode(accountMode === 'login' ? 'register' : 'login'));
+
+  function authErrorMessage(err) {
+    const code = err && err.code;
+    if (code === 'auth/email-already-in-use') return 'Ese email ya tiene una cuenta. Iniciá sesión.';
+    if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') return 'Contraseña incorrecta.';
+    if (code === 'auth/user-not-found') return 'No existe una cuenta con ese email.';
+    if (code === 'auth/weak-password') return 'La contraseña tiene que tener al menos 6 caracteres.';
+    if (code === 'auth/invalid-email') return 'Ese email no es válido.';
+    return 'No se pudo completar. Intentá de nuevo.';
+  }
+
+  accountForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = accountEmailInput.value.trim();
+    const password = accountPasswordInput.value;
+    const originalLabel = accountSubmitBtn.textContent;
+    accountSubmitBtn.disabled = true;
+    accountSubmitBtn.textContent = accountMode === 'login' ? 'INGRESANDO...' : 'CREANDO...';
+
+    const request = accountMode === 'login'
+      ? signIn(email, password)
+      : signUp(email, password, accountNameInput.value.trim() || email);
+
+    request
+      .then(() => {
+        // Capture this before closeAccountModal() runs, since it resets
+        // pendingCheckout as part of its own "user cancelled" behavior.
+        const shouldResumeCheckout = pendingCheckout;
+        accountForm.reset();
+        closeAccountModal();
+        toast(accountMode === 'login' ? 'Sesión iniciada' : '¡Cuenta creada!');
+        if (shouldResumeCheckout) completeCheckout();
+      })
+      .catch((err) => toast(authErrorMessage(err)))
+      .finally(() => {
+        accountSubmitBtn.disabled = false;
+        accountSubmitBtn.textContent = originalLabel;
+      });
+  });
+
+  function openAccountDrawer() {
+    renderMyOrders();
+    accountDrawer.classList.remove('hidden');
+    requestAnimationFrame(() => accountDrawer.classList.add('drawer-open'));
+  }
+  function closeAccountDrawer() {
+    accountDrawer.classList.remove('drawer-open');
+    setTimeout(() => accountDrawer.classList.add('hidden'), 300);
+  }
+  accountDrawer.querySelectorAll('[data-close-account-drawer]').forEach((el) => el.addEventListener('click', closeAccountDrawer));
+
+  accountBtn.addEventListener('click', () => {
+    if (currentUser) openAccountDrawer();
+    else {
+      setAccountMode('login');
+      openAccountModal();
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    signOutUser();
+    closeAccountDrawer();
+    toast('Sesión cerrada');
+  });
+
+  function orderStatusClasses(status) {
+    if (status === 'entregado' || status === 'listo') return 'bg-secondary-container text-on-secondary-container';
+    if (status === 'preparando') return 'bg-primary-fixed text-on-primary-fixed-variant';
+    return 'bg-surface-variant text-on-surface-variant';
+  }
+
+  function renderMyOrders() {
+    accountDrawerEmail.textContent = currentUser
+      ? (currentUser.displayName ? `${currentUser.displayName} · ${currentUser.email}` : currentUser.email)
+      : '';
+    const mine = currentUser ? currentOrders.filter((o) => o.userId === currentUser.uid) : [];
+    if (mine.length === 0) {
+      myOrdersList.innerHTML = `<p class="text-on-surface-variant text-center py-8">Todavía no hiciste ningún pedido.</p>`;
+      return;
+    }
+    myOrdersList.innerHTML = mine.map((order) => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const itemsText = items.map((i) => `${i.name} x${i.qty}`).join(', ');
+      const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('es-AR') : '';
+      return `
+      <div class="border border-surface-variant rounded-xl p-4">
+        <div class="flex justify-between items-center mb-2 gap-2">
+          <span class="font-headline-lg-mobile text-headline-lg-mobile text-primary text-[16px]">${formatPrice(order.total)}</span>
+          <span class="font-label-sm text-label-sm uppercase tracking-wide px-2 py-1 rounded-full ${orderStatusClasses(order.status)}">${escapeHtml(ORDER_STATUS_LABELS[order.status] || order.status)}</span>
+        </div>
+        <p class="text-on-surface-variant text-sm">${escapeHtml(itemsText)}</p>
+        <p class="text-on-surface-variant text-xs mt-1">${escapeHtml(date)}</p>
+      </div>`;
+    }).join('');
+  }
 
   // ---- Navigation ----
   document.getElementById('nav-catalogo').addEventListener('click', (e) => {
@@ -315,5 +569,12 @@
     currentProducts = products;
     renderProducts();
     if (!cartDrawer.classList.contains('hidden')) renderCart();
+  });
+  subscribeToOrders((orders) => {
+    currentOrders = orders;
+    if (!accountDrawer.classList.contains('hidden')) renderMyOrders();
+  });
+  onAuthChange((user) => {
+    currentUser = user;
   });
 })();

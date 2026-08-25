@@ -13,31 +13,12 @@
   const passwordInput = document.getElementById('password-input');
   const togglePasswordBtn = document.getElementById('toggle-password-visibility');
 
-  const accountBtn = document.getElementById('account-btn');
-  const accountModal = document.getElementById('account-modal');
-  const accountModalTitle = document.getElementById('account-modal-title');
-  const accountForm = document.getElementById('account-form');
-  const accountNameInput = document.getElementById('account-name');
-  const accountEmailInput = document.getElementById('account-email');
-  const accountPasswordInput = document.getElementById('account-password');
-  const accountSubmitBtn = document.getElementById('account-submit-btn');
-  const accountToggleModeBtn = document.getElementById('account-toggle-mode');
-  const accountTogglePrompt = document.getElementById('account-toggle-prompt');
-  const accountDrawer = document.getElementById('account-drawer');
-  const accountDrawerEmail = document.getElementById('account-drawer-email');
-  const myOrdersList = document.getElementById('my-orders-list');
-  const logoutBtn = document.getElementById('logout-btn');
-
   let currentProducts = [];
-  let currentOrders = [];
-  let currentUser = null;
   let activeCategory = 'Todos';
-  let accountMode = 'login'; // 'login' | 'register'
-  let pendingCheckout = false;
 
   // Fill in your cooperative's WhatsApp number (country code + number, no
-  // spaces or symbols, e.g. "59899123456") to also get an instant WhatsApp
-  // notification whenever a real order comes in. Leave empty to skip that.
+  // spaces or symbols, e.g. "59899123456") to send orders straight there.
+  // Leave empty to just show a confirmation message instead.
   const WHATSAPP_NUMBER = '';
 
   function toast(message) {
@@ -310,184 +291,29 @@
   cartBtn.addEventListener('click', openCart);
   cartDrawer.querySelectorAll('[data-close-cart]').forEach((el) => el.addEventListener('click', closeCart));
 
-  // ---- Checkout (requires a customer account, so orders can be tracked) ----
   checkoutBtn.addEventListener('click', () => {
-    if (getCart().length === 0) {
+    const cart = getCart();
+    if (cart.length === 0) {
       toast('Tu carrito está vacío');
       return;
     }
-    if (!currentUser) {
-      pendingCheckout = true;
-      closeCart();
-      setAccountMode('login');
-      openAccountModal();
-      toast('Iniciá sesión para completar tu pedido');
-      return;
-    }
-    completeCheckout();
-  });
-
-  function completeCheckout() {
-    const cart = getCart();
-    if (cart.length === 0) return;
     const items = cart.map((item) => {
       const product = currentProducts.find((p) => p.id === item.id);
       return product ? { id: product.id, name: product.name, price: product.price, qty: item.qty } : null;
     }).filter(Boolean);
-    if (items.length === 0) return;
     const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const message = `¡Hola! Quiero hacer este pedido a la Cooperativa Escolar Escuela Funes:\n${items.map((i) => `- ${i.name} x${i.qty} (${formatPrice(i.price * i.qty)})`).join('\n')}\nTotal: ${formatPrice(total)}`;
 
-    const order = {
-      userId: currentUser.uid,
-      customerName: currentUser.displayName || currentUser.email,
-      customerEmail: currentUser.email,
-      items,
-      total,
-    };
-
-    checkoutBtn.disabled = true;
-    createOrder(order)
-      .then(() => {
-        items.forEach((i) => decrementStock(i.id, i.qty));
-        saveCart([]);
-        renderCart();
-        closeCart();
-        toast('¡Pedido realizado! Podés ver el estado en "Mi Cuenta".');
-        if (WHATSAPP_NUMBER) {
-          const lines = items.map((i) => `- ${i.name} x${i.qty} (${formatPrice(i.price * i.qty)})`);
-          const message = `¡Hola! Hay un pedido nuevo del sitio:\n${lines.join('\n')}\nTotal: ${formatPrice(total)}\nCliente: ${order.customerName} (${order.customerEmail})`;
-          window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
-        }
-      })
-      .catch(() => {
-        toast('No se pudo enviar el pedido. Intentá de nuevo.');
-      })
-      .finally(() => {
-        checkoutBtn.disabled = false;
-      });
-  }
-
-  // ---- Customer accounts ----
-  function openAccountModal() {
-    accountModal.classList.remove('hidden');
-    accountModal.classList.add('flex');
-    requestAnimationFrame(() => accountModal.classList.add('modal-open'));
-  }
-  function closeAccountModal() {
-    accountModal.classList.remove('modal-open');
-    setTimeout(() => {
-      accountModal.classList.add('hidden');
-      accountModal.classList.remove('flex');
-    }, 200);
-    pendingCheckout = false;
-  }
-  accountModal.querySelectorAll('[data-close-account]').forEach((el) => el.addEventListener('click', closeAccountModal));
-
-  function setAccountMode(mode) {
-    accountMode = mode;
-    const isLogin = mode === 'login';
-    accountModalTitle.textContent = isLogin ? 'Iniciar Sesión' : 'Crear Cuenta';
-    accountNameInput.classList.toggle('hidden', isLogin);
-    accountSubmitBtn.textContent = isLogin ? 'INGRESAR' : 'CREAR CUENTA';
-    accountTogglePrompt.textContent = isLogin ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?';
-    accountToggleModeBtn.textContent = isLogin ? 'Crear una' : 'Iniciar sesión';
-  }
-  accountToggleModeBtn.addEventListener('click', () => setAccountMode(accountMode === 'login' ? 'register' : 'login'));
-
-  function authErrorMessage(err) {
-    const code = err && err.code;
-    if (code === 'auth/email-already-in-use') return 'Ese email ya tiene una cuenta. Iniciá sesión.';
-    if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') return 'Contraseña incorrecta.';
-    if (code === 'auth/user-not-found') return 'No existe una cuenta con ese email.';
-    if (code === 'auth/weak-password') return 'La contraseña tiene que tener al menos 6 caracteres.';
-    if (code === 'auth/invalid-email') return 'Ese email no es válido.';
-    return 'No se pudo completar. Intentá de nuevo.';
-  }
-
-  accountForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = accountEmailInput.value.trim();
-    const password = accountPasswordInput.value;
-    const originalLabel = accountSubmitBtn.textContent;
-    accountSubmitBtn.disabled = true;
-    accountSubmitBtn.textContent = accountMode === 'login' ? 'INGRESANDO...' : 'CREANDO...';
-
-    const request = accountMode === 'login'
-      ? signIn(email, password)
-      : signUp(email, password, accountNameInput.value.trim() || email);
-
-    request
-      .then(() => {
-        // Capture this before closeAccountModal() runs, since it resets
-        // pendingCheckout as part of its own "user cancelled" behavior.
-        const shouldResumeCheckout = pendingCheckout;
-        accountForm.reset();
-        closeAccountModal();
-        toast(accountMode === 'login' ? 'Sesión iniciada' : '¡Cuenta creada!');
-        if (shouldResumeCheckout) completeCheckout();
-      })
-      .catch((err) => toast(authErrorMessage(err)))
-      .finally(() => {
-        accountSubmitBtn.disabled = false;
-        accountSubmitBtn.textContent = originalLabel;
-      });
-  });
-
-  function openAccountDrawer() {
-    renderMyOrders();
-    accountDrawer.classList.remove('hidden');
-    requestAnimationFrame(() => accountDrawer.classList.add('drawer-open'));
-  }
-  function closeAccountDrawer() {
-    accountDrawer.classList.remove('drawer-open');
-    setTimeout(() => accountDrawer.classList.add('hidden'), 300);
-  }
-  accountDrawer.querySelectorAll('[data-close-account-drawer]').forEach((el) => el.addEventListener('click', closeAccountDrawer));
-
-  accountBtn.addEventListener('click', () => {
-    if (currentUser) openAccountDrawer();
-    else {
-      setAccountMode('login');
-      openAccountModal();
+    if (WHATSAPP_NUMBER) {
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      toast('¡Gracias por tu pedido! Nos pondremos en contacto para coordinar la entrega.');
     }
+    items.forEach((i) => decrementStock(i.id, i.qty));
+    saveCart([]);
+    renderCart();
+    closeCart();
   });
-
-  logoutBtn.addEventListener('click', () => {
-    signOutUser();
-    closeAccountDrawer();
-    toast('Sesión cerrada');
-  });
-
-  function orderStatusClasses(status) {
-    if (status === 'entregado' || status === 'listo') return 'bg-secondary-container text-on-secondary-container';
-    if (status === 'preparando') return 'bg-primary-fixed text-on-primary-fixed-variant';
-    return 'bg-surface-variant text-on-surface-variant';
-  }
-
-  function renderMyOrders() {
-    accountDrawerEmail.textContent = currentUser
-      ? (currentUser.displayName ? `${currentUser.displayName} · ${currentUser.email}` : currentUser.email)
-      : '';
-    const mine = currentUser ? currentOrders.filter((o) => o.userId === currentUser.uid) : [];
-    if (mine.length === 0) {
-      myOrdersList.innerHTML = `<p class="text-on-surface-variant text-center py-8">Todavía no hiciste ningún pedido.</p>`;
-      return;
-    }
-    myOrdersList.innerHTML = mine.map((order) => {
-      const items = Array.isArray(order.items) ? order.items : [];
-      const itemsText = items.map((i) => `${i.name} x${i.qty}`).join(', ');
-      const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('es-AR') : '';
-      return `
-      <div class="border border-surface-variant rounded-xl p-4">
-        <div class="flex justify-between items-center mb-2 gap-2">
-          <span class="font-headline-lg-mobile text-headline-lg-mobile text-primary text-[16px]">${formatPrice(order.total)}</span>
-          <span class="font-label-sm text-label-sm uppercase tracking-wide px-2 py-1 rounded-full ${orderStatusClasses(order.status)}">${escapeHtml(ORDER_STATUS_LABELS[order.status] || order.status)}</span>
-        </div>
-        <p class="text-on-surface-variant text-sm">${escapeHtml(itemsText)}</p>
-        <p class="text-on-surface-variant text-xs mt-1">${escapeHtml(date)}</p>
-      </div>`;
-    }).join('');
-  }
 
   // ---- Navigation ----
   document.getElementById('nav-catalogo').addEventListener('click', (e) => {
@@ -569,12 +395,5 @@
     currentProducts = products;
     renderProducts();
     if (!cartDrawer.classList.contains('hidden')) renderCart();
-  });
-  subscribeToOrders((orders) => {
-    currentOrders = orders;
-    if (!accountDrawer.classList.contains('hidden')) renderMyOrders();
-  });
-  onAuthChange((user) => {
-    currentUser = user;
   });
 })();

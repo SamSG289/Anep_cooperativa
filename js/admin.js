@@ -6,18 +6,15 @@
 
   const navDashboard = document.getElementById('nav-dashboard');
   const navInventario = document.getElementById('nav-inventario');
-  const navPedidos = document.getElementById('nav-pedidos');
   const viewDashboard = document.getElementById('view-dashboard');
   const viewInventario = document.getElementById('view-inventario');
-  const viewPedidos = document.getElementById('view-pedidos');
   const headerTitle = document.getElementById('header-title');
-  const navLinks = [navDashboard, navInventario, navPedidos];
+  const navLinks = [navDashboard, navInventario];
 
   const tableBody = document.getElementById('product-table-body');
   const paginationLabel = document.getElementById('pagination-label');
   const pagePrev = document.getElementById('page-prev');
   const pageNext = document.getElementById('page-next');
-  const ordersList = document.getElementById('orders-list');
 
   const modal = document.getElementById('product-modal');
   const modalTitle = document.getElementById('modal-title');
@@ -39,7 +36,6 @@
   const sidebarCloseBtn = document.getElementById('sidebar-close');
 
   let currentProducts = [];
-  let currentOrders = [];
   let currentView = 'dashboard';
 
   function toast(message) {
@@ -69,9 +65,9 @@
   sidebarOverlay.addEventListener('click', closeSidebar);
 
   // ---- View switching ----
-  const VIEW_TITLES = { dashboard: 'Panel General', inventario: 'Inventario', pedidos: 'Pedidos' };
-  const VIEW_SECTIONS = { dashboard: viewDashboard, inventario: viewInventario, pedidos: viewPedidos };
-  const VIEW_NAVS = { dashboard: navDashboard, inventario: navInventario, pedidos: navPedidos };
+  const VIEW_TITLES = { dashboard: 'Panel General', inventario: 'Inventario' };
+  const VIEW_SECTIONS = { dashboard: viewDashboard, inventario: viewInventario };
+  const VIEW_NAVS = { dashboard: navDashboard, inventario: navInventario };
 
   function showView(view) {
     currentView = view;
@@ -90,15 +86,12 @@
 
   function renderCurrentView() {
     if (currentView === 'inventario') renderTable();
-    else if (currentView === 'pedidos') renderOrders();
     else renderDashboard();
   }
 
   navDashboard.addEventListener('click', (e) => { e.preventDefault(); showView('dashboard'); });
   navInventario.addEventListener('click', (e) => { e.preventDefault(); showView('inventario'); });
-  navPedidos.addEventListener('click', (e) => { e.preventDefault(); showView('pedidos'); });
   document.querySelector('[data-goto-inventario]').addEventListener('click', () => showView('inventario'));
-  document.querySelector('[data-goto-pedidos]').addEventListener('click', () => showView('pedidos'));
 
   logoutLink.addEventListener('click', () => {
     sessionStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
@@ -110,7 +103,6 @@
     document.getElementById('stat-total').textContent = products.length;
     document.getElementById('stat-available').textContent = products.filter((p) => p.stockQty > 0).length;
     document.getElementById('stat-out').textContent = products.filter((p) => p.stockQty <= 0).length;
-    document.getElementById('stat-pending-orders').textContent = currentOrders.filter((o) => o.status === 'pendiente').length;
   }
 
   // ---- Table / Inventory ----
@@ -176,45 +168,6 @@
     deleteProduct(id);
     toast('Producto eliminado');
   }
-
-  // ---- Orders ----
-  function renderOrders() {
-    if (currentOrders.length === 0) {
-      ordersList.innerHTML = `<div class="bg-surface-container-lowest rounded-2xl p-10 text-center text-on-surface-variant">Todavía no hay pedidos.</div>`;
-      return;
-    }
-    ordersList.innerHTML = currentOrders.map(renderOrderCard).join('');
-  }
-
-  function renderOrderCard(order) {
-    const items = Array.isArray(order.items) ? order.items : [];
-    const itemsText = items.map((i) => `${i.name} x${i.qty}`).join(', ');
-    const date = order.createdAt ? new Date(order.createdAt).toLocaleString('es-AR') : '';
-    return `
-    <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] p-6 flex flex-col md:flex-row md:items-center gap-4 justify-between">
-      <div class="flex-1">
-        <div class="flex items-center gap-3 flex-wrap">
-          <span class="font-headline-lg-mobile text-headline-lg-mobile text-primary">${escapeHtml(order.customerName || 'Cliente')}</span>
-          <span class="text-on-surface-variant text-sm">${escapeHtml(order.customerEmail || '')}</span>
-        </div>
-        <p class="text-on-surface-variant text-sm mt-1">${escapeHtml(itemsText)}</p>
-        <p class="text-on-surface-variant text-xs mt-1">${escapeHtml(date)}</p>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="font-headline-lg-mobile text-headline-lg-mobile text-primary">${formatPrice(order.total)}</span>
-        <select data-order-status="${order.id}" class="bg-surface-container border border-outline-variant rounded-lg px-3 py-2 font-label-sm text-label-sm text-on-surface">
-          ${ORDER_STATUSES.map((s) => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${ORDER_STATUS_LABELS[s]}</option>`).join('')}
-        </select>
-      </div>
-    </div>`;
-  }
-
-  ordersList.addEventListener('change', (e) => {
-    const select = e.target.closest('[data-order-status]');
-    if (!select) return;
-    updateOrderStatus(select.dataset.orderStatus, select.value);
-    toast('Estado del pedido actualizado');
-  });
 
   // ---- Modal (create / edit) ----
   function setSlotImage(index, src) {
@@ -335,25 +288,15 @@
   });
 
   // ---- Init ----
-  let productsLoaded = false;
-  let ordersLoaded = false;
-  let initialViewShown = false;
-  function handleInitialLoad() {
-    if (initialViewShown || !productsLoaded || !ordersLoaded) return;
-    initialViewShown = true;
-    showView('dashboard');
-  }
+  let initialized = false;
   subscribeToProducts((products) => {
     currentProducts = products;
-    if (productsLoaded) renderCurrentView();
-    productsLoaded = true;
-    handleInitialLoad();
-  });
-  subscribeToOrders((orders) => {
-    currentOrders = orders;
-    if (ordersLoaded) renderCurrentView();
-    ordersLoaded = true;
-    handleInitialLoad();
+    if (!initialized) {
+      initialized = true;
+      showView('dashboard');
+    } else {
+      renderCurrentView();
+    }
   });
   seedProductsIfEmpty();
 })();

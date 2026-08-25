@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Panel de Administración · Cooperativa Ancep</title>
-<link rel="stylesheet" href="css/styles.css?v=7">
+<link rel="stylesheet" href="css/styles.css?v=8">
 <style>
   /* Inlined (not in css/styles.css) so it can never go out of sync with
      this page's markup if a browser caches the stylesheet separately. */
@@ -41,7 +41,7 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
 <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="js/data.js?v=7"></script>
+<script src="js/data.js?v=8"></script>
 <script>
   if (sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) !== '1') {
     window.location.replace('index.html');
@@ -69,9 +69,6 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
     <a id="nav-inventario" data-view="inventario" href="#" class="flex items-center px-6 py-4 transition-all rounded-xl">
       <span class="material-symbols-outlined mr-4">inventory_2</span>Inventario
     </a>
-    <a id="nav-pedidos" data-view="pedidos" href="#" class="flex items-center px-6 py-4 transition-all rounded-xl">
-      <span class="material-symbols-outlined mr-4">receipt_long</span>Pedidos
-    </a>
   </nav>
   <div class="px-6 mt-auto">
     <a id="logout-link" href="index.html" class="flex items-center px-6 py-4 text-on-surface-variant hover:text-primary transition-colors border-t border-outline-variant">
@@ -97,7 +94,7 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
           <h1 class="text-headline-lg-mobile font-headline-lg-mobile md:text-headline-xl md:font-headline-xl text-primary mb-2">Panel General</h1>
           <p class="font-body-lg text-body-lg text-on-surface-variant">Resumen del catálogo de la cooperativa.</p>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-gutter mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-gutter mb-8">
           <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] p-6 md:p-8 flex flex-col gap-2">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Total de Productos</span>
             <span id="stat-total" class="font-headline-xl text-headline-xl text-primary">0</span>
@@ -110,21 +107,11 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sin Stock</span>
             <span id="stat-out" class="font-headline-xl text-headline-xl text-error">0</span>
           </div>
-          <div class="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgb(128,0,32,0.04)] p-6 md:p-8 flex flex-col gap-2">
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Pedidos Pendientes</span>
-            <span id="stat-pending-orders" class="font-headline-xl text-headline-xl text-secondary">0</span>
-          </div>
         </div>
-        <div class="flex flex-wrap gap-4">
-          <button data-goto-inventario class="bg-primary text-on-primary font-label-sm text-label-sm px-6 py-4 rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md flex items-center gap-2 w-fit">
-            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-            VER INVENTARIO
-          </button>
-          <button data-goto-pedidos class="border-2 border-primary text-primary font-label-sm text-label-sm px-6 py-4 rounded-[16px] hover:bg-surface-container transition-all flex items-center gap-2 w-fit">
-            <span class="material-symbols-outlined text-[20px]">receipt_long</span>
-            VER PEDIDOS
-          </button>
-        </div>
+        <button data-goto-inventario class="bg-primary text-on-primary font-label-sm text-label-sm px-6 py-4 rounded-[16px] hover:bg-surface-tint transition-all shadow-sm hover:shadow-md flex items-center gap-2 w-fit">
+          <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+          VER INVENTARIO
+        </button>
       </section>
 
       <!-- Inventory view -->
@@ -164,15 +151,6 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- Orders view -->
-      <section id="view-pedidos" class="hidden">
-        <div class="mb-8 md:mb-12">
-          <h1 class="text-headline-lg-mobile font-headline-lg-mobile md:text-headline-xl md:font-headline-xl text-primary mb-2">Pedidos</h1>
-          <p class="font-body-lg text-body-lg text-on-surface-variant">Pedidos hechos por los clientes desde el catálogo.</p>
-        </div>
-        <div id="orders-list" class="flex flex-col gap-4"></div>
       </section>
 
     </div>
@@ -273,6 +251,6 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
 
 <div id="toast-container"></div>
 
-<script src="js/admin.js?v=7"></script>
+<script src="js/admin.js?v=8"></script>
 </body>
 </html>

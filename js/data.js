@@ -1,8 +1,7 @@
 // Shared "database" for the cooperative site.
-// Products, orders and customer accounts live in Firebase (Realtime
-// Database + Authentication), so a change made in the admin panel or an
-// order placed by a customer shows up live for everyone, on every device.
-// The cart itself stays in localStorage since it's specific to each visitor.
+// Products live in Firebase Realtime Database, so a change made in the
+// admin panel (on any device) pushes live to every open index.html/admin.html
+// tab. The cart stays in localStorage since it's specific to each visitor.
 
 const STORAGE_KEYS = {
   CART: 'anep_cart',
@@ -11,14 +10,6 @@ const STORAGE_KEYS = {
 
 const ADMIN_PASSWORD = 'C0op3r4tiv4An3p';
 const LOGO_CLICKS_TO_UNLOCK = 15;
-
-const ORDER_STATUSES = ['pendiente', 'preparando', 'listo', 'entregado'];
-const ORDER_STATUS_LABELS = {
-  pendiente: 'Pendiente',
-  preparando: 'Preparando',
-  listo: 'Listo para retirar',
-  entregado: 'Entregado',
-};
 
 const firebaseConfig = {
   apiKey: 'AIzaSyADcmtv6mWS9864OKFOEv0SesS-Rkmm8jA',
@@ -32,7 +23,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const productsRef = firebase.database().ref('products');
-const ordersRef = firebase.database().ref('orders');
 
 const FALLBACK_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD5967Jh0NNog9TpcAQyt6mI1gmRqwWs7J5hn4A-DZg9mfLt1-1nxxh0MSvFzmXsrXaLXjXpdQJgdDu41m62gFmKz4KR7bfAB2R9rRB4sxP9pufqamVn9iDk388AxS3ectZG-Gv0uoC9GCRwrtINDbR9_h8U_5_7uTfwUsGI5TJC19aeNOHkRvNH8CTw_4e8fEf7qFMgAyiUdCCio_z4hbTFOZtFJRXBcs83TNffOF9-sofHmPaxlLqRLzTGM8iYJDODsY';
 
@@ -164,46 +154,6 @@ function decrementStock(id, qty) {
     const cur = typeof current === 'number' ? current : 0;
     return Math.max(0, cur - qty);
   });
-}
-
-// ---- Customer accounts (Firebase Authentication) ----
-function signUp(email, password, name) {
-  return firebase.auth().createUserWithEmailAndPassword(email, password).then((cred) =>
-    cred.user.updateProfile({ displayName: name }).then(() => cred.user)
-  );
-}
-
-function signIn(email, password) {
-  return firebase.auth().signInWithEmailAndPassword(email, password);
-}
-
-function signOutUser() {
-  return firebase.auth().signOut();
-}
-
-function onAuthChange(callback) {
-  firebase.auth().onAuthStateChanged(callback);
-}
-
-// ---- Orders ----
-function createOrder(order) {
-  const newRef = ordersRef.push();
-  return newRef.set({ ...order, status: 'pendiente', createdAt: Date.now() }).then(() => newRef.key);
-}
-
-// Streams every order (small-scale co-op catalog, so filtering "my orders"
-// vs. "all orders" happens client-side rather than needing a database index).
-function subscribeToOrders(callback) {
-  ordersRef.on('value', (snapshot) => {
-    const val = snapshot.val();
-    const orders = val ? Object.keys(val).map((key) => ({ id: key, ...val[key] })) : [];
-    orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    callback(orders);
-  });
-}
-
-function updateOrderStatus(orderId, status) {
-  return ordersRef.child(orderId).update({ status });
 }
 
 function getCart() {

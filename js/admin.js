@@ -1,15 +1,13 @@
 (function () {
   const PAGE_SIZE = 5;
-  const MAX_IMAGES = 4;
   let currentPage = 1;
-  let pendingImages = []; // data URLs / URLs for the product being created/edited, index-aligned to the slots
+  let pendingImage = null; // data URL for the product being created/edited
 
   const navDashboard = document.getElementById('nav-dashboard');
   const navInventario = document.getElementById('nav-inventario');
   const viewDashboard = document.getElementById('view-dashboard');
   const viewInventario = document.getElementById('view-inventario');
   const headerTitle = document.getElementById('header-title');
-  const navLinks = [navDashboard, navInventario];
 
   const tableBody = document.getElementById('product-table-body');
   const paginationLabel = document.getElementById('pagination-label');
@@ -21,12 +19,12 @@
   const productForm = document.getElementById('product-form');
   const productIdInput = document.getElementById('product-id');
   const productNameInput = document.getElementById('product-name');
-  const productCategoryInput = document.getElementById('product-category');
-  const categoryList = document.getElementById('category-list');
   const productDescriptionInput = document.getElementById('product-description');
   const productPriceInput = document.getElementById('product-price');
-  const productStockQtyInput = document.getElementById('product-stock-qty');
-  const imageSlots = Array.from(document.querySelectorAll('.image-slot'));
+  const productStockInput = document.getElementById('product-stock');
+  const imageDrop = document.getElementById('image-drop');
+  const imageDropEmpty = document.getElementById('image-drop-empty');
+  const imageInput = document.getElementById('image-input');
   const addProductBtn = document.getElementById('add-product-btn');
   const logoutLink = document.getElementById('logout-link');
 
@@ -36,7 +34,6 @@
   const sidebarCloseBtn = document.getElementById('sidebar-close');
 
   let currentProducts = [];
-  let currentView = 'dashboard';
 
   function toast(message) {
     const container = document.getElementById('toast-container');
@@ -65,27 +62,21 @@
   sidebarOverlay.addEventListener('click', closeSidebar);
 
   // ---- View switching ----
-  const VIEW_TITLES = { dashboard: 'Panel General', inventario: 'Inventario' };
-  const VIEW_SECTIONS = { dashboard: viewDashboard, inventario: viewInventario };
-  const VIEW_NAVS = { dashboard: navDashboard, inventario: navInventario };
-
   function showView(view) {
-    currentView = view;
-    Object.keys(VIEW_SECTIONS).forEach((key) => VIEW_SECTIONS[key].classList.toggle('hidden', key !== view));
-    navLinks.forEach((link) => {
-      const active = link === VIEW_NAVS[view];
-      link.classList.toggle('bg-secondary-container', active);
-      link.classList.toggle('text-on-secondary-container', active);
-      link.classList.toggle('shadow-sm', active);
-      link.classList.toggle('text-on-surface-variant', !active);
-    });
-    headerTitle.textContent = VIEW_TITLES[view];
+    const isDashboard = view === 'dashboard';
+    viewDashboard.classList.toggle('hidden', !isDashboard);
+    viewInventario.classList.toggle('hidden', isDashboard);
+    navDashboard.classList.toggle('bg-secondary-container', isDashboard);
+    navDashboard.classList.toggle('text-on-secondary-container', isDashboard);
+    navDashboard.classList.toggle('shadow-sm', isDashboard);
+    navDashboard.classList.toggle('text-on-surface-variant', !isDashboard);
+    navInventario.classList.toggle('bg-secondary-container', !isDashboard);
+    navInventario.classList.toggle('text-on-secondary-container', !isDashboard);
+    navInventario.classList.toggle('shadow-sm', !isDashboard);
+    navInventario.classList.toggle('text-on-surface-variant', isDashboard);
+    headerTitle.textContent = isDashboard ? 'Panel General' : 'Inventario';
     closeSidebar();
-    renderCurrentView();
-  }
-
-  function renderCurrentView() {
-    if (currentView === 'inventario') renderTable();
+    if (!isDashboard) renderTable();
     else renderDashboard();
   }
 
@@ -101,8 +92,8 @@
   function renderDashboard() {
     const products = currentProducts;
     document.getElementById('stat-total').textContent = products.length;
-    document.getElementById('stat-available').textContent = products.filter((p) => p.stockQty > 0).length;
-    document.getElementById('stat-out').textContent = products.filter((p) => p.stockQty <= 0).length;
+    document.getElementById('stat-available').textContent = products.filter((p) => p.stock).length;
+    document.getElementById('stat-out').textContent = products.filter((p) => !p.stock).length;
   }
 
   // ---- Table / Inventory ----
@@ -114,31 +105,29 @@
     const pageItems = products.slice(start, start + PAGE_SIZE);
 
     tableBody.innerHTML = pageItems.map(renderRow).join('') || `
-      <tr><td colspan="7" class="p-10 text-center text-on-surface-variant">No hay productos cargados todavía.</td></tr>`;
+      <tr><td colspan="6" class="p-10 text-center text-on-surface-variant">No hay productos cargados todavía.</td></tr>`;
 
     const shownFrom = products.length === 0 ? 0 : start + 1;
     const shownTo = Math.min(start + PAGE_SIZE, products.length);
     paginationLabel.textContent = `Mostrando ${shownFrom}-${shownTo} de ${products.length} productos`;
     pagePrev.disabled = currentPage <= 1;
     pageNext.disabled = currentPage >= totalPages;
-
-    const categories = Array.from(new Set(currentProducts.map((p) => p.category).filter(Boolean)));
-    categoryList.innerHTML = categories.map((c) => `<option value="${escapeHtml(c)}">`).join('');
   }
 
   function renderRow(product) {
-    const available = product.stockQty > 0;
     return `
-    <tr class="border-b border-surface-variant hover:bg-surface-bright transition-colors group ${available ? '' : 'bg-error-container/10'}">
+    <tr class="border-b border-surface-variant hover:bg-surface-bright transition-colors group ${product.stock ? '' : 'bg-error-container/10'}">
       <td class="p-3 sm:p-6">
-        <img class="w-12 h-12 rounded-lg object-cover shadow-sm ${available ? '' : 'opacity-50 grayscale-[50%]'}" src="${escapeHtml(product.images[0])}">
+        <img class="w-12 h-12 rounded-lg object-cover shadow-sm ${product.stock ? '' : 'opacity-50 grayscale-[50%]'}" src="${escapeHtml(product.image)}">
       </td>
-      <td class="p-3 sm:p-6 font-headline-lg-mobile text-headline-lg-mobile ${available ? 'text-primary' : 'text-on-surface-variant'}">${escapeHtml(product.name)}</td>
-      <td class="p-3 sm:p-6 text-on-surface-variant hidden lg:table-cell">${escapeHtml(product.category)}</td>
+      <td class="p-3 sm:p-6 font-headline-lg-mobile text-headline-lg-mobile ${product.stock ? 'text-primary' : 'text-on-surface-variant'}">${escapeHtml(product.name)}</td>
       <td class="p-3 sm:p-6 text-on-surface-variant hidden md:table-cell truncate max-w-[200px]">${escapeHtml(product.description)}</td>
-      <td class="p-3 sm:p-6 whitespace-nowrap ${available ? '' : 'text-on-surface-variant'}">${formatPrice(product.price)}</td>
+      <td class="p-3 sm:p-6 whitespace-nowrap ${product.stock ? '' : 'text-on-surface-variant'}">${formatPrice(product.price)}</td>
       <td class="p-3 sm:p-6 text-center">
-        <span class="inline-flex items-center justify-center min-w-[2.5rem] px-2 py-1 rounded-full text-sm font-semibold ${available ? 'bg-secondary-container text-on-secondary-container' : 'bg-surface-variant text-on-surface-variant'}">${product.stockQty}</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input data-toggle-stock="${product.id}" class="sr-only peer" type="checkbox" ${product.stock ? 'checked' : ''}>
+          <div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+        </label>
       </td>
       <td class="p-3 sm:p-6 text-right whitespace-nowrap">
         <button data-edit="${product.id}" class="text-on-surface-variant hover:text-primary transition-colors p-2" title="Editar">
@@ -158,6 +147,15 @@
     if (deleteBtn) confirmAndDeleteProduct(Number(deleteBtn.dataset.delete));
   });
 
+  tableBody.addEventListener('change', (e) => {
+    const toggle = e.target.closest('[data-toggle-stock]');
+    if (!toggle) return;
+    const product = currentProducts.find((p) => p.id === Number(toggle.dataset.toggleStock));
+    if (!product) return;
+    updateProduct(product.id, { stock: toggle.checked });
+    toast(`${product.name}: ${toggle.checked ? 'marcado como disponible' : 'marcado sin stock'}`);
+  });
+
   pagePrev.addEventListener('click', () => { currentPage -= 1; renderTable(); });
   pageNext.addEventListener('click', () => { currentPage += 1; renderTable(); });
 
@@ -170,49 +168,12 @@
   }
 
   // ---- Modal (create / edit) ----
-  function setSlotImage(index, src) {
-    pendingImages[index] = src || null;
-    const slot = imageSlots[index];
-    const empty = slot.querySelector('.image-slot-empty');
-    const remove = slot.querySelector('.image-slot-remove');
-    if (src) {
-      slot.style.backgroundImage = `url('${src}')`;
-      empty.classList.add('hidden');
-      remove.classList.remove('hidden');
-      remove.classList.add('flex');
-    } else {
-      slot.style.backgroundImage = 'none';
-      empty.classList.remove('hidden');
-      remove.classList.add('hidden');
-      remove.classList.remove('flex');
-    }
-  }
-
-  imageSlots.forEach((slot, index) => {
-    const input = slot.querySelector('[data-slot-input]');
-    slot.addEventListener('click', (e) => {
-      if (e.target.closest('[data-remove-slot]')) return;
-      input.click();
-    });
-    input.addEventListener('change', () => {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => setSlotImage(index, reader.result);
-      reader.readAsDataURL(file);
-    });
-    slot.querySelector('[data-remove-slot]').addEventListener('click', (e) => {
-      e.stopPropagation();
-      setSlotImage(index, null);
-      input.value = '';
-    });
-  });
-
   function openModal(editId) {
     productForm.reset();
-    pendingImages = new Array(MAX_IMAGES).fill(null);
-    imageSlots.forEach((_, index) => setSlotImage(index, null));
-    productStockQtyInput.value = 0;
+    pendingImage = null;
+    imageDrop.style.backgroundImage = 'none';
+    imageDropEmpty.classList.remove('hidden');
+    productStockInput.checked = true;
 
     if (editId) {
       const product = currentProducts.find((p) => p.id === editId);
@@ -220,11 +181,12 @@
       modalTitle.textContent = 'Editar Producto';
       productIdInput.value = product.id;
       productNameInput.value = product.name;
-      productCategoryInput.value = product.category;
       productDescriptionInput.value = product.description;
       productPriceInput.value = product.price;
-      productStockQtyInput.value = product.stockQty;
-      product.images.slice(0, MAX_IMAGES).forEach((img, index) => setSlotImage(index, img));
+      productStockInput.checked = !!product.stock;
+      pendingImage = product.image;
+      imageDrop.style.backgroundImage = `url('${product.image}')`;
+      imageDropEmpty.classList.add('hidden');
     } else {
       modalTitle.textContent = 'Nuevo Producto';
       productIdInput.value = '';
@@ -242,32 +204,41 @@
   addProductBtn.addEventListener('click', () => openModal(null));
   modal.querySelectorAll('[data-close-modal]').forEach((el) => el.addEventListener('click', closeModal));
 
+  imageDrop.addEventListener('click', () => imageInput.click());
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingImage = reader.result;
+      imageDrop.style.backgroundImage = `url('${pendingImage}')`;
+      imageDropEmpty.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const FALLBACK_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD5967Jh0NNog9TpcAQyt6mI1gmRqwWs7J5hn4A-DZg9mfLt1-1nxxh0MSvFzmXsrXaLXjXpdQJgdDu41m62gFmKz4KR7bfAB2R9rRB4sxP9pufqamVn9iDk388AxS3ectZG-Gv0uoC9GCRwrtINDbR9_h8U_5_7uTfwUsGI5TJC19aeNOHkRvNH8CTw_4e8fEf7qFMgAyiUdCCio_z4hbTFOZtFJRXBcs83TNffOF9-sofHmPaxlLqRLzTGM8iYJDODsY';
+
   const saveProductBtn = document.getElementById('save-product-btn');
 
   productForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = productNameInput.value.trim();
     const price = Number(productPriceInput.value);
-    const stockQty = Number(productStockQtyInput.value);
     if (!name || !price || price < 0) {
       toast('Completá el nombre y un precio válido');
       return;
     }
-    if (Number.isNaN(stockQty) || stockQty < 0) {
-      toast('La cantidad en stock tiene que ser 0 o más');
-      return;
-    }
 
-    const images = pendingImages.filter(Boolean);
     const editId = productIdInput.value ? Number(productIdInput.value) : null;
     const payload = {
       name,
       description: productDescriptionInput.value.trim(),
-      category: productCategoryInput.value.trim() || 'Otros',
       price,
-      stockQty,
-      images: images.length ? images : [FALLBACK_IMAGE],
+      stock: productStockInput.checked,
     };
+    if (pendingImage) payload.image = pendingImage;
+    else if (!editId) payload.image = FALLBACK_IMAGE;
 
     saveProductBtn.disabled = true;
     saveProductBtn.textContent = 'GUARDANDO...';
@@ -289,6 +260,10 @@
 
   // ---- Init ----
   let initialized = false;
+  function renderCurrentView() {
+    if (viewInventario.classList.contains('hidden')) renderDashboard();
+    else renderTable();
+  }
   subscribeToProducts((products) => {
     currentProducts = products;
     if (!initialized) {

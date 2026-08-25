@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Panel de Administración · Cooperativa Ancep</title>
-<link rel="stylesheet" href="css/styles.css?v=8">
+<link rel="stylesheet" href="css/styles.css?v=9">
 <style>
   /* Inlined (not in css/styles.css) so it can never go out of sync with
      this page's markup if a browser caches the stylesheet separately. */
@@ -41,7 +41,7 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
 <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="js/data.js?v=8"></script>
+<script src="js/data.js?v=9"></script>
 <script>
   if (sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) !== '1') {
     window.location.replace('index.html');
@@ -133,7 +133,6 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
                 <tr class="bg-surface-container-low border-b border-surface-variant">
                   <th class="p-3 sm:p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest w-24">Imagen</th>
                   <th class="p-3 sm:p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Producto</th>
-                  <th class="p-3 sm:p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest hidden lg:table-cell">Categoría</th>
                   <th class="p-3 sm:p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest hidden md:table-cell">Descripción</th>
                   <th class="p-3 sm:p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Precio</th>
                   <th class="p-3 sm:p-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-center">Stock</th>
@@ -167,73 +166,40 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
         </div>
         <form id="product-form" class="flex-1 overflow-y-auto p-8 flex flex-col gap-8">
           <input type="hidden" id="product-id">
-          <div class="flex flex-col gap-2">
-            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Fotos del Producto (hasta 4)</label>
-            <div id="image-slots" class="grid grid-cols-4 gap-3">
-              <div class="image-slot aspect-square rounded-xl border-2 border-dashed border-outline-variant bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer bg-cover bg-center relative" data-slot="0">
-                <div class="image-slot-empty absolute inset-0 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-primary">add_a_photo</span>
-                </div>
-                <button type="button" class="image-slot-remove hidden absolute -top-2 -right-2 w-6 h-6 rounded-full bg-error text-on-error items-center justify-center shadow-sm" data-remove-slot="0">
-                  <span class="material-symbols-outlined text-[16px]">close</span>
-                </button>
-                <input type="file" accept="image/*" class="hidden" data-slot-input="0">
+          <div id="image-drop" class="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-2xl p-8 bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer group bg-cover bg-center" style="background-image:none;">
+            <div id="image-drop-empty" class="flex flex-col items-center">
+              <div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-on-secondary-container">add_a_photo</span>
               </div>
-              <div class="image-slot aspect-square rounded-xl border-2 border-dashed border-outline-variant bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer bg-cover bg-center relative" data-slot="1">
-                <div class="image-slot-empty absolute inset-0 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-primary">add_a_photo</span>
-                </div>
-                <button type="button" class="image-slot-remove hidden absolute -top-2 -right-2 w-6 h-6 rounded-full bg-error text-on-error items-center justify-center shadow-sm" data-remove-slot="1">
-                  <span class="material-symbols-outlined text-[16px]">close</span>
-                </button>
-                <input type="file" accept="image/*" class="hidden" data-slot-input="1">
-              </div>
-              <div class="image-slot aspect-square rounded-xl border-2 border-dashed border-outline-variant bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer bg-cover bg-center relative" data-slot="2">
-                <div class="image-slot-empty absolute inset-0 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-primary">add_a_photo</span>
-                </div>
-                <button type="button" class="image-slot-remove hidden absolute -top-2 -right-2 w-6 h-6 rounded-full bg-error text-on-error items-center justify-center shadow-sm" data-remove-slot="2">
-                  <span class="material-symbols-outlined text-[16px]">close</span>
-                </button>
-                <input type="file" accept="image/*" class="hidden" data-slot-input="2">
-              </div>
-              <div class="image-slot aspect-square rounded-xl border-2 border-dashed border-outline-variant bg-surface-container hover:bg-surface-variant transition-colors cursor-pointer bg-cover bg-center relative" data-slot="3">
-                <div class="image-slot-empty absolute inset-0 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-primary">add_a_photo</span>
-                </div>
-                <button type="button" class="image-slot-remove hidden absolute -top-2 -right-2 w-6 h-6 rounded-full bg-error text-on-error items-center justify-center shadow-sm" data-remove-slot="3">
-                  <span class="material-symbols-outlined text-[16px]">close</span>
-                </button>
-                <input type="file" accept="image/*" class="hidden" data-slot-input="3">
-              </div>
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-widest text-center">Subir Imagen</span>
+              <span class="font-body-md text-body-md text-on-surface-variant text-center mt-2 text-[14px]">JPG, PNG hasta 2MB</span>
             </div>
-            <span class="font-body-md text-body-md text-on-surface-variant text-[13px]">La primera foto es la principal. JPG o PNG, hasta 2MB c/u.</span>
+            <input id="image-input" type="file" accept="image/*" class="hidden">
           </div>
           <div class="flex flex-col gap-2">
             <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Nombre del Producto</label>
             <input id="product-name" required class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Ej. Mermelada de Naranja" type="text">
           </div>
           <div class="flex flex-col gap-2">
-            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Categoría</label>
-            <input id="product-category" list="category-list" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="Ej. Mermeladas" type="text">
-            <datalist id="category-list"></datalist>
-          </div>
-          <div class="flex flex-col gap-2">
             <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Descripción</label>
             <textarea id="product-description" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline resize-none h-32" placeholder="Detalles de los ingredientes y preparación..."></textarea>
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Precio (ARS)</label>
-              <div class="relative">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 font-body-lg text-on-surface-variant">$</span>
-                <input id="product-price" required min="0" step="1" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 pl-8 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="0.00" type="number">
-              </div>
+          <div class="flex flex-col gap-2">
+            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Precio (ARS)</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 font-body-lg text-on-surface-variant">$</span>
+              <input id="product-price" required min="0" step="1" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 pl-8 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="0.00" type="number">
             </div>
-            <div class="flex flex-col gap-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Cantidad en Stock</label>
-              <input id="product-stock-qty" required min="0" step="1" class="w-full bg-surface-container border-b-2 border-transparent focus:border-primary p-4 rounded-t-lg font-body-lg text-body-lg text-on-surface outline-none transition-all placeholder:text-outline" placeholder="0" type="number">
+          </div>
+          <div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+            <div class="flex flex-col">
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Disponibilidad</span>
+              <span class="font-body-md text-body-md text-on-surface">Producto en stock</span>
             </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="product-stock" checked class="sr-only peer" type="checkbox">
+              <div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+            </label>
           </div>
         </form>
         <div class="p-8 border-t border-surface-variant bg-surface-container-lowest flex gap-4">
@@ -251,6 +217,6 @@ tailwind.config = {theme:{extend:{"colors":{"on-secondary-fixed":"#131f00","erro
 
 <div id="toast-container"></div>
 
-<script src="js/admin.js?v=8"></script>
+<script src="js/admin.js?v=9"></script>
 </body>
 </html>
